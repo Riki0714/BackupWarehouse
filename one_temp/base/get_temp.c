@@ -19,9 +19,12 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
 #include "get_temp.h"
+#include "getTime.h"
 
-#define CONFIG_DEBUG
+//#define CONFIG_DEBUG
 #include "myDebug.h"
 
 
@@ -29,14 +32,17 @@
 #define PATH_OTHER  	"/w1_slave"
 #define KEY_FILE_NAME   "28-"
 #define KEY_CONTENT   	"t-"
-#define LEN				64
+#define LEN_1			32
+#define LEN_2			64
+#define LEN_3			128
+#define LEN_4			256
 
 #define OPEN_DIR_ERROR 	 -2
 #define FOUND_ERROR      -3
 
-char sn_name[64];
+//char sn_name[64];
 
-int getName(char *serialNum, int len)
+int get_name(char *serialNum, int len)
 {
 	char			w1_path[64] = W1_PATH;
 	char			path_other[64] = PATH_OTHER;
@@ -117,11 +123,53 @@ int get_file_content(char *allPath, char *content, int conLen)
 	return 1;
 }
 
+
+int get_temp_str(char *buf, int len)
+{
+	char 	name[LEN_2] = {0};
+	char	allPath[LEN_3] = W1_PATH;
+	char	content[LEN_2] = {0};
+	char	time[LEN_3] = {0};
+	double	tempF = 0;
+	char	str[LEN_4] = {0};
+
+	//memset(name, 0, sizeof(name));
+	if( get_name(name, 64)<0 )  
+	{
+		printf("get name error!\n");
+		return -3;
+	}
+
+	//strcat(allPath, name);
+	strncat(allPath, name, (sizeof(allPath)-1-strlen(allPath)) );
+	strncat(allPath, PATH_OTHER, (sizeof(allPath)-1-strlen(allPath)) );
+	dbg_print("%s\n", allPath);
+
+	get_file_content(allPath, content, 64);
+	dbg_print("%s\n", content);
+	tempF = atof(content) / 1000;
+
+	get_time_pipe(time, 128);
+	dbg_print("%s\n", time);
+
+	memset(buf, 0, len);
+	snprintf(str, len-1, "--Serial number: %s\n--Sampling time: %s--Temperature value: %.2f\n", name, time, tempF);
+	dbg_print("%s\n", str);
+
+	strncpy(buf, str, len-1);
+
+	return 1;
+}
+
+/*  
 int main()
 {
-	char 	name[64] = {0};
-	char	allPath[128] = W1_PATH;
-	char	content[64] = {0};
+	char 	name[LEN_2] = {0};
+	char	allPath[LEN_3] = W1_PATH;
+	char	content[LEN_2] = {0};
+	char	time[LEN_3] = {0};
+	double	tempF = 0;
+	char	str[LEN_4] = {0};
 
 	//memset(name, 0, sizeof(name));
 	if( getName(name, 64)<0 )  
@@ -136,14 +184,19 @@ int main()
 	dbg_print("%s\n", allPath);
 
 	get_file_content(allPath, content, 64);
-	printf("haha\n");
-
 	dbg_print("%s\n", content);
+	tempF = atof(content) / 1000;
+
+	get_time_pipe(time, 128);
+	dbg_print("%s\n", time);
+
+	//memset(buf, 0, len);
+	snprintf(str, 256-1, "--Serial number: %s\n--Sampling time: %s--Temperature value: %.2f\n", name, time, tempF);
+	printf("%s\n", str);
+
 	return 0;
 }
-
-
-
+*/
 
 
 

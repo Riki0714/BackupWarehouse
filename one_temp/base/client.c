@@ -17,7 +17,8 @@
 #include "get_temp.h"
 
 
-#define TIME 1000
+#define STR_LEN		128
+#define TIME 		1000
 
 #define INPUT_PARA_ERROR  -2
 #define GET_TEMP_ERROR 	  -3
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
 	int		time = TIME;
 	int		ch = -1;
 	int 	rv = -1; //return value
-	char 	*serialNum[32];
+	char 	serialNum[STR_LEN] = {0};
 
 	struct option	opts[] = {
 		{"ipaddr", required_argument,  NULL, 'i'},
@@ -92,15 +93,15 @@ int main(int argc, char *argv[])
 		return INPUT_PARA_ERROR;
 	}
 
-	dbg_print("ip and port successfully! %d\n", rv);
+	printf("The entered ip and port are incorrect!\n");
 	dbg_print("%s %d %d\n", ipaddress, port, time);
 
-	if ( !getName(serialNum) )
+	if ( !get_temp_str(serialNum, STR_LEN) )
 	{
 		printf("get temperature error!\n");
 		return GET_TEMP_ERROR;
 	}
-	dbg_print("name: %s", serialNum);
+	dbg_print("%s", serialNum);
 
 	return 0;
 }

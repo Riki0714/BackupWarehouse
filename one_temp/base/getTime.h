@@ -2,21 +2,20 @@
  *      Copyright:  (C) 2023 iot<iot@email.com>
  *                  All rights reserved.
  *
- *       Filename:  get_temp.h
+ *       Filename:  getTime.h
  *    Description:  This file 
  *
- *        Version:  1.0.0(02/26/23)
+ *        Version:  1.0.0(03/02/23)
  *         Author:  iot <iot@email.com>
- *      ChangeLog:  1, Release initial version on "02/26/23 16:40:58"
+ *      ChangeLog:  1, Release initial version on "03/02/23 13:24:52"
  *                 
  ********************************************************************************/
 
-#ifndef _GET_TEMP_H
-#define _GET_TEMP_H
+#ifndef _GETTIME_H
+#define _GETTIME_H
 
-int get_name(char *serialNum, int len);
-int get_file_content(char *allPath, char *content, int conLen);
-int get_temp_str(char *buf, int len);
+int get_time_func(char *buf1, int len1, char *buf2, int len2);
+int get_time_pipe(char *buf, int len);
 
 #endif
 
