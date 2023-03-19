@@ -14,6 +14,12 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <errno.h>
+
 #include "get_temp.h"
 
 
@@ -44,6 +50,9 @@ void print_usage(char *proname)
 	printf("-t(--time): sampling interval\n");
 	printf("-h(--help): some help\n");
 }
+
+#define SER_PORT	  9999
+#define SER_IP		  "127.0.0.1"
 
 int main(int argc, char *argv[])
 {
