@@ -20,21 +20,19 @@
 #include <unistd.h>
 
 #include "myDebug.h"
-#include "mySocket.h"
 
 #define SER_PORT    8888
 #define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 
-/*
 typedef struct socket_information{
-	int		 fd;
-	char	*ip;
-	int		 port;
+	int 	fd;
+	char   *ip;
+	int		port;
+	char a;
+	long long 	b;
 } sock_infor;
-*/
 
-  
 int server_init(sock_infor *serv_infor_t, int backlog)
 {
 	int 					rv = -1, on = 1;
@@ -80,91 +78,75 @@ Exit1:
 	return rv;
 }
 
-int client_init(sock_infor *cli_infor_t)
-{
-	int 					rv = 0;
-	struct sockaddr_in	 	cli_addr;
-
-	if( ( cli_infor_t->fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
-	{
-		printf("get socket failure :%s\n", strerror(errno));
-		return -51;
-	}
-	printf("socket successfully!\n");
-
-	memset(&cli_addr, 0, sizeof(cli_addr));
-	cli_addr.sin_family = AF_INET;
-	cli_addr.sin_port = htons( cli_infor_t->port);
-	inet_aton( cli_infor_t->ip, &cli_addr.sin_addr);
-
-	if( connect( cli_infor_t->fd, (struct sockaddr *)&cli_addr, sizeof(cli_addr))< 0)
-	{
-		printf("connect failure!\n");
-		rv = -52;
-		goto Exit1;
-	}
-
-	printf("%d\n", cli_infor_t->fd);
-	printf("The client has been successfully initialized!\n");
-
-Exit1:
-	if( rv<0 )
-		close( cli_infor_t->fd );
-	else
-		rv = 0;
-
-	return rv;
-}
-
-
-/*
 int main(int argc, char *argv[])
 {
-	sock_infor				cli_infor_t;
+	sock_infor				serv_infor_t;
+	int						clifd = -1;
+	struct sockaddr_in 		cli_addr;
+	socklen_t				cliaddr_len;
 	int						rv = -20;
-	char					buf[64]="hello!\n";
+	char					buf[64];
 
-	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
-	printf("%d\n", sizeof(cli_infor_t));
-	cli_infor_t.ip = "127.0.0.1";
-	cli_infor_t.port = 8888;
-	cli_infor_t.fd = -1;
+	memset(&serv_infor_t, 0, sizeof(serv_infor_t));
+	printf("%d\n", sizeof(serv_infor_t));
+	serv_infor_t.ip = SER_IP;
+	serv_infor_t.port = SER_PORT;
+	serv_infor_t.fd = -1;
 
-	printf("wu%d\n", cli_infor_t.fd);
-	if( client_init(&cli_infor_t) < 0)
+	if( server_init(&serv_infor_t, BACKLOG) < 0)
 	{
-		printf("client initialization error!\n");
+		printf("server initialization error!\n");
 		return -23;
 	}
 
-	printf("hei%d\n", cli_infor_t.fd);
-		printf("Start Accept...\n");
+	while(1)
+	{
+		printf("Start waiting and acccept new client connect...\n");
 
-		if( write(cli_infor_t.fd, buf, strlen(buf)) < 0 )
+		clifd = accept(serv_infor_t.fd, (struct sockaddr *)&cli_addr, &cliaddr_len);
+		if(clifd<0)
 		{
-			printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
-			close(cli_infor_t.fd);
+			printf("accept new client failure: %s\n", strerror(errno));
+			rv = -24;
+			goto Exit1;
 		}
-		
+		printf("Accept new client[%s:%d] with fd [%d]\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port), clifd);
+
 		memset(buf, 0, sizeof(buf));
-		if( (rv=read(cli_infor_t.fd, buf, sizeof(buf))) < 0)
+		if( (rv=read(clifd, buf, sizeof(buf))) < 0)
 		{
-			printf("Read data from client socket[%d] failure: %s\n", cli_infor_t.fd, strerror(errno));
-			close(cli_infor_t.fd);
-			return -1;
+			printf("Read data from client socket[%d] failure: %s\n", clifd, strerror(errno));
+			close(clifd);
+			continue;
 		}
 		else if( rv == 0 )
 		{
-			printf("client socket[%d] disconnected\n", cli_infor_t.fd);
-			close(cli_infor_t.fd);
-			return -2;
+			printf("client socket[%d] disconnected\n", clifd);
+			close(clifd);
+			continue;
 		}
-		printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, cli_infor_t.fd, buf);
+		printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, clifd, buf);
 		
+		if( write(clifd, buf, rv) < 0 )
+		{
+			printf("Write %d bytes data back to client[%d] failure: %s\n", rv, clifd,strerror(errno));
+			close(clifd);
+		}
+		
+		sleep(1);
+		close(clifd);
+	}
+
+
+Exit1:
+	if(rv<0)
+		close(serv_infor_t.fd);
+	else
+		rv = 0;
 
 	return 0;
 }
-*/
+
 
 
 

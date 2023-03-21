@@ -20,21 +20,18 @@
 #include <unistd.h>
 
 #include "myDebug.h"
-#include "mySocket.h"
 
 #define SER_PORT    8888
 #define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 
-/*
 typedef struct socket_information{
 	int		 fd;
 	char	*ip;
 	int		 port;
 } sock_infor;
-*/
 
-  
+/*  
 int server_init(sock_infor *serv_infor_t, int backlog)
 {
 	int 					rv = -1, on = 1;
@@ -78,7 +75,7 @@ Exit1:
 		rv = 0;
 
 	return rv;
-}
+}*/
 
 int client_init(sock_infor *cli_infor_t)
 {
@@ -117,7 +114,7 @@ Exit1:
 }
 
 
-/*
+
 int main(int argc, char *argv[])
 {
 	sock_infor				cli_infor_t;
@@ -164,7 +161,7 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-*/
+
 
 
 

@@ -21,8 +21,6 @@
 #include <errno.h>
 
 #include "get_temp.h"
-#include "mySocket.h"
-#include "myDns.h"
 
 
 #define STR_LEN		128
@@ -53,8 +51,8 @@ void print_usage(char *proname)
 	printf("-h(--help): some help\n");
 }
 
-//#define SER_PORT	  9999
-//#define SER_IP		  "127.0.0.1"
+#define SER_PORT	  9999
+#define SER_IP		  "127.0.0.1"
 
 int main(int argc, char *argv[])
 {
@@ -63,16 +61,14 @@ int main(int argc, char *argv[])
 	int		file_fd = -1;
 	//char    *ipaddress = NULL;
 	//int		port = 0;
-	int		time = TIME; //sample interval
+	int		sampleInt = TIME; //sample interval
 	int		ch = -1; //Parameter resolution return value
 	int 	rv = -1; //return value
 	char 	serialNum[STR_LEN] = {0}; //The obtained temperature string
 	int		errorFlag = 0;
-	//int		getLen;
-	//char    getStr[100]={0};
 
 	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
-	cli_infor_t.ip = (char *)&rv;
+	cli_infor_t.ip = &rv;
 	cli_infor_t.fd = -1;
 
 	struct option	opts[] = {
@@ -88,7 +84,6 @@ int main(int argc, char *argv[])
 		switch(ch)
 		{
 			case 'i':
-			{
 				int 	getLen = strlen(optarg);
 				char 	getStr[100] = {0};
 
@@ -101,14 +96,13 @@ int main(int argc, char *argv[])
 					cli_infor_t.ip = optarg;
 
 				break;
-			}
 
 			case 'p':
-				cli_infor_t.port = atoi(optarg);
+				port = atoi(optarg);
 				break;
 
 			case 't':
-				time = atoi(optarg);
+				sampleInt = atoi(optarg);
 				break;
 
 			case 'h':
@@ -117,20 +111,19 @@ int main(int argc, char *argv[])
 		}
 	}
   
-	if( !cli_infor_t.port || !cli_infor_t.ip )
+	if( !port || !ipaddress )
 	{
 		printf("The entered ip and port are incorrect!\n");
 		print_usage(argv[0]);
 		return INPUT_PARA_ERROR;
 	}
-	printf("The entered ip and port are correct!\n");
-	dbg_print("%s %d %d\n", cli_infor_t.ip, cli_infor_t.port, time);
-
-	printf("Now the client tries the server...\n");
+	dbg_print("The entered ip and port are correct!\n");
 
 	/*  
 	while(1)
 	{
+		dbg_print("%s %d %d\n", ipaddress, port, time);
+
 		//Acquired temperature
 		if ( !get_temp_str(serialNum, STR_LEN) )
 		{
