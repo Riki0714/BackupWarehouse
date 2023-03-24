@@ -23,9 +23,8 @@
 #include "get_temp.h"
 #include "mySocket.h"
 #include "myDns.h"
-#include "myTimer.h"
 
-#define STR_LEN		256
+#define STR_LEN		128
 #define TIME 		5
 
 #define INPUT_PARA_ERROR  -2
@@ -50,7 +49,7 @@ int main(int argc, char *argv[])
 	char 	serialNum[STR_LEN] = {0}; //The obtained temperature string
 	int		errorFlag = 0;
 	int		link_flag = 0;
-	char    buf[STR_LEN]={0};
+	char   *buf[128]={0};
 
 	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
 	cli_infor_t.ip = (char *)&rv;
@@ -111,6 +110,8 @@ int main(int argc, char *argv[])
 
 	while(1)
 	{
+		if( alrm_flag )
+		{
 			//Acquired temperature
 			if ( !get_temp_str(serialNum, STR_LEN) )
 			{
@@ -130,7 +131,7 @@ int main(int argc, char *argv[])
 				}
 			}
 			errorFlag = 0;
-			dbg_print("%s\n", serialNum);
+			dbg_print("%s", serialNum);
 			
 			//connect to server
 			rv = client_init(&cli_infor_t);
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
 					printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
 					close(cli_infor_t.fd);
 				}
-			/*  	 
+/*  
 				if(rv=read(cli_infor_t.fd, buf, sizeof(buf)) < 0 )
 				{
 					link_flag = 0;
@@ -159,7 +160,7 @@ int main(int argc, char *argv[])
 					link_flag = -1;
 				}
 				printf("read %d bytes data from client[%d] and echo it back: '%s\n', rv, cli_infor_t.fd, buf");
-				*/
+	*/		
 			}
 			else
 			{
@@ -168,8 +169,9 @@ int main(int argc, char *argv[])
 
 			dbg_print("hei22 %d\n", link_flag);
 			//close(cli_infor_t.fd);
-
-			timer_s(time, 0);
+			alrm_flag = 0;
+			alarm(time);
+		}
 		
 	}
 

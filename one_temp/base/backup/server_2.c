@@ -19,12 +19,14 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-//#include "myDebug.h"
+#include "myDebug.h"
+#include "mySocket.h"
 
-#define SER_PORT    6666
+#define SER_PORT    8888
 #define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 
+/*  
 typedef struct socket_information{
 	int 	fd;
 	char   *ip;
@@ -32,7 +34,8 @@ typedef struct socket_information{
 	char a;
 	long long 	b;
 } sock_infor;
-
+*/
+/*
 int server_init(sock_infor *serv_infor_t, int backlog)
 {
 	int 					rv = -1, on = 1;
@@ -77,6 +80,7 @@ Exit1:
 
 	return rv;
 }
+*/
 
 int main(int argc, char *argv[])
 {
@@ -86,6 +90,8 @@ int main(int argc, char *argv[])
 	socklen_t				cliaddr_len;
 	int						rv = -20;
 	char					buf[64];
+	char					buf1[64]="hello, you are client!\n";
+	int 					daemon_flag = 0;
 
 	memset(&serv_infor_t, 0, sizeof(serv_infor_t));
 	printf("%d\n", sizeof(serv_infor_t));
@@ -93,11 +99,18 @@ int main(int argc, char *argv[])
 	serv_infor_t.port = SER_PORT;
 	serv_infor_t.fd = -1;
 
+	//set max open socket count
+	set_socket_rlimit();
+
+	//Initialize the server
 	if( server_init(&serv_infor_t, BACKLOG) < 0)
 	{
 		printf("server initialization error!\n");
 		return -23;
 	}
+
+	//Backgrounder
+	if(daemon_flag)	daemon(0, 0);
 
 	while(1)
 	{
@@ -127,7 +140,7 @@ int main(int argc, char *argv[])
 		}
 		printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, clifd, buf);
 		
-		if( write(clifd, buf, rv) < 0 )
+		if( write(clifd, buf1, rv) < 0 )
 		{
 			printf("Write %d bytes data back to client[%d] failure: %s\n", rv, clifd,strerror(errno));
 			close(clifd);

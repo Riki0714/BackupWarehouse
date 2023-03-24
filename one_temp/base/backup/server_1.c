@@ -19,9 +19,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-//#include "myDebug.h"
+#include "myDebug.h"
 
-#define SER_PORT    6666
+#define SER_PORT    8888
 #define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 

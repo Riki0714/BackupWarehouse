@@ -18,13 +18,15 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "myDebug.h"
 #include "mySocket.h"
 
-#define SER_PORT    8888
-#define SER_IP		"0.0.0.0"
-#define BACKLOG		13
+//#define SER_PORT    8888
+//#define SER_IP		"0.0.0.0"
+//#define BACKLOG		13
 
 /*
 typedef struct socket_information{
@@ -54,7 +56,7 @@ int server_init(sock_infor *serv_infor_t, int backlog)
 	ser_addr.sin_port = htons( serv_infor_t->port);
 	inet_aton( (*serv_infor_t).ip, &ser_addr.sin_addr);
 
-	if( bind( (*serv_infor_t).fd, (struct sockaddr *)&ser_addr, sizeof(ser_addr))< 0)
+	if( bind( serv_infor_t->fd, (struct sockaddr *)&ser_addr, sizeof(ser_addr))< 0)
 	{
 		printf("bind failure!\n");
 		rv = -52;
@@ -116,6 +118,16 @@ Exit1:
 	return rv;
 }
 
+void set_socket_rlimit(void)
+{
+	struct rlimit limit = {0};
+
+	getrlimit(RLIMIT_NOFILE, &limit);
+	limit.rlim_cur = limit.rlim_max;
+	setrlimit(RLIMIT_NOFILE, &limit);
+
+	printf("set socket open fd max count to %d\n", limit.rlim_max);
+}
 
 /*
 int main(int argc, char *argv[])

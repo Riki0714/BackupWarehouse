@@ -23,10 +23,9 @@
 #include "get_temp.h"
 #include "mySocket.h"
 #include "myDns.h"
-#include "myTimer.h"
 
-#define STR_LEN		256
-#define TIME 		5
+#define STR_LEN		128
+#define TIME 		30
 
 #define INPUT_PARA_ERROR  -2
 #define GET_TEMP_ERROR 	  -3
@@ -34,23 +33,45 @@
 #define CONFIG_DEBUG
 #include "myDebug.h"
 
-void print_usage(char *proname); //dns man
-void timer(int sig);  	//timer
-void sig_timer(int sig);
+/*  
+#define CONFIG_DEBUG
+#ifdef  CONFIG_DEBUG
+#define dbg_print(format, args...) printf(format, args)
+#else
+#define dbg_print(format, args...) do{} while(0)
+#endif
+*/
 
-int alrm_flag=1; //timer flag
+/* 
+name: 		print_usage
+function:	Description of command line parameters
+parameter:	proname--program name
+value:		NULL
+*/
+void print_usage(char *proname)
+{
+	printf("hello, this is %s:\n", proname);
+	printf("-i(--ipaddr): ip address of server\n");
+	printf("-p(--port): port of server\n");
+	printf("-t(--time): sampling interval\n");
+	printf("-h(--help): some help\n");
+}
+
 
 int main(int argc, char *argv[])
 {
 	sock_infor	cli_infor_t;
+	//int 	cli_fd = -1;
 	int		file_fd = -1;
+	//char    *ipaddress = NULL;
+	//int		port = 0;
 	int		time = TIME; //sample interval
 	int		ch = -1; //Parameter resolution return value
 	int 	rv = -1; //return value
 	char 	serialNum[STR_LEN] = {0}; //The obtained temperature string
 	int		errorFlag = 0;
-	int		link_flag = 0;
-	char    buf[STR_LEN]={0};
+	//int		getLen;
+	//char    getStr[100]={0};
 
 	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
 	cli_infor_t.ip = (char *)&rv;
@@ -109,93 +130,45 @@ int main(int argc, char *argv[])
 
 	printf("Now the client tries the server...\n");
 
+	/*  
 	while(1)
 	{
-			//Acquired temperature
-			if ( !get_temp_str(serialNum, STR_LEN) )
-			{
-				printf("get temperature error!\n");
-				errorFlag++;
+		//Acquired temperature
+		if ( !get_temp_str(serialNum, STR_LEN) )
+		{
+			printf("get temperature error!\n");
+			errorFlag++;
 
-				if(errorFlag==5)
-				{
-					printf("Sorry, please check your hardware device and try again\n");
-					return -1; //If you can't get it, an error exit is reported
-				}
-				else
-				{
-					printf("Unable to obtain temperature, trying again...\n");
-					sleep(5);
-					continue;
-				}
-			}
-			errorFlag = 0;
-			dbg_print("%s\n", serialNum);
-			
-			//connect to server
-			rv = client_init(&cli_infor_t);
-			if(rv<0)
+			if(errorFlag==5)
 			{
-				printf("Failed to connect to the server\n");
-				link_flag = 0;
-			}
-			else  link_flag = 1;
-
-			if(link_flag)
-			{
-				dbg_print("hei %d\n", link_flag);
-				if( write(cli_infor_t.fd, serialNum, strlen(serialNum)) < 0 )
-				{
-					printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
-					close(cli_infor_t.fd);
-				}
-			/*  	 
-				if(rv=read(cli_infor_t.fd, buf, sizeof(buf)) < 0 )
-				{
-					link_flag = 0;
-				}
-				else if( rv==0 )
-				{
-					link_flag = -1;
-				}
-				printf("read %d bytes data from client[%d] and echo it back: '%s\n', rv, cli_infor_t.fd, buf");
-				*/
+				printf("Sorry, please check your hardware device and try again\n");
+				return -1; //If you can't get it, an error exit is reported
 			}
 			else
 			{
-				//fang ru shu ju ku
+				printf("Unable to obtain temperature, trying again...\n");
+				sleep(5);
+				continue;
 			}
+		}
+		errorFlag = 0;
+		dbg_print("%s", serialNum);
 
-			dbg_print("hei22 %d\n", link_flag);
-			//close(cli_infor_t.fd);
 
-			timer_s(time, 0);
+		//connect to server
+		rv = client_init(cli_infor_t);
+		if()
+		{
+
+		}
 		
 	}
+*/
 
 	return 0;
 }
 
-/* 
-name: 		print_usage
-function:	Description of command line parameters
-parameter:	proname--program name
-value:		NULL
-*/
-void print_usage(char *proname)
-{
-	printf("hello, this is %s:\n", proname);
-	printf("-i(--ipaddr): ip address of server\n");
-	printf("-p(--port): port of server\n");
-	printf("-t(--time): sampling interval\n");
-	printf("-h(--help): some help\n");
-}
 
 
-void sig_timer(int sig)
-{
-	alrm_flag = 1;
-	//alarm(5);
-}
 
 

@@ -22,6 +22,7 @@ typedef struct socket_information{
 
 int server_init(sock_infor *serv_infor_t, int backlog); //Initialize the server
 int client_init(sock_infor *cli_infor_t); //The client tries the server
+void set_socket_rlimit(void); //set max open socket count
 
 #endif
 
