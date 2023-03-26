@@ -25,12 +25,11 @@
 #include "myDebug.h"
 #include "mySocket.h"
 #include "myDns.h"
+#include "mySql.h"
 
-#define SER_PORT    8888
-#define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 #define MAX_EVENTS	512
-#define BASENAME    "serData"
+#define BASENAME    "serData.db"
 #define TABLENAME	"TEMP"
 
 int main(int argc, char *argv[])
@@ -113,9 +112,12 @@ int main(int argc, char *argv[])
 		sqlite3_close(db);
 		return -24;
 	}
+	if( sql_op(db, tbName, FIND, NULL) ) //If 1 is returned, the table does not exist
+	{
+		sql_op(db, tbName, CREATE, "id int, content text"); //create a new table
+	}
+	printf("Open database successfully!\n");
 
-	//Backgrounder
-	if(daemon_flag)	daemon(0, 0);
 
 	//---------------- epoll -----------------
 	event.events = EPOLLIN; //Specify event type
@@ -204,8 +206,14 @@ int main(int argc, char *argv[])
 					close(event_array[i].data.fd);
 					continue;
 				}
-				printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, event_array[i].data.fd, buf);
+				else
+				{
+					printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, event_array[i].data.fd, buf);
 		
+					//Put the data into the database
+					sql_op(db, tbName, INSERT, buf);
+				}
+
 				if( write(event_array[i].data.fd, buf1, rv) < 0 )
 				{
 					printf("Write %d bytes data back to client[%d] failure: %s\n", rv, event_array[i].data.fd, strerror(errno));
@@ -218,6 +226,8 @@ int main(int argc, char *argv[])
 		//close(clifd);
 	}
 
+	close(serv_infor_t.fd);
+	sqlite3_close(db);
 
 Exit1:
 	if(rv<0)

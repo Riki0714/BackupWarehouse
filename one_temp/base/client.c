@@ -31,7 +31,7 @@
 #define INPUT_PARA_ERROR  -2
 #define GET_TEMP_ERROR 	  -3
 
-#define CONFIG_DEBUG
+//#define CONFIG_DEBUG
 #include "myDebug.h"
 
 void print_usage(char *proname); //dns man
@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 	int		errorFlag = 0;
 	int		link_flag = 0;
 	char    buf[STR_LEN]={0};
+	char    ReceBuf[STR_LEN]={0};
 
 	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
 	cli_infor_t.ip = (char *)&rv;
@@ -150,20 +151,26 @@ int main(int argc, char *argv[])
 				printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
 				close(cli_infor_t.fd);
 				link_flag = 0;
+
+				continue;
 				//put into database
 				//goto EXIT1;
 			}
-			/*  	 
-				if(rv=read(cli_infor_t.fd, buf, sizeof(buf)) < 0 )
-				{
-					link_flag = 0;
-				}
-				else if( rv==0 )
-				{
-					link_flag = 0;
-				}
-				printf("read %d bytes data from client[%d] and echo it back: '%s\n', rv, cli_infor_t.fd, buf");
-				*/
+
+			memset(ReceBuf, 0, sizeof(ReceBuf));
+			if( ( rv=read(cli_infor_t.fd, ReceBuf, sizeof(buf)) )  < 0 )
+			{
+				printf("read data from server[%d] failure: %s\n", cli_infor_t.fd, strerror(errno));
+				link_flag = 0;
+				continue;
+			}
+			else if( rv==0 )
+			{
+				printf("The connection to the server[%d] is disconnected\n", cli_infor_t.fd);
+				link_flag = 0;
+				continue;
+			}
+			printf("read %d bytes data from client[%d] and echo it back: '%s\n'", rv, cli_infor_t.fd, ReceBuf);
 		}
 		
 		if( !link_flag ) //Failed to connect to the server

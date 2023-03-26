@@ -79,11 +79,34 @@ int sql_op(sqlite3 *db, char *tbName, int op, char *data)
 			snprintf(str, LEN-1, "UPDATE %s SET %s", tbName, data);
 			sqlite3_exec(db, str, NULL, NULL, &errmsg);
 			break;
+
+		case FIND:
+		{
+			int rv=-1;
+			char	  **azResult=NULL;
+			int 		nrow, ncolumn;
+
+
+			//snprintf(str, LEN-1, "SELECT COUNT(*) FROM sqlite_master wthere typr='table' and name='%s'", tbName);
+			//rv = sqlite3_exec(db, str, NULL, NULL, &errmsg);
+			snprintf(str, LEN-1, "SELECT * FROM %s;", tbName);
+			rv = sqlite3_get_table(db, str, &azResult, &nrow, &ncolumn, &errmsg);
+			//rv: 0 y   1 n
+			if( rv==0 ) 
+			{
+				printf("This table already exists\n");
+			}
+
+			return rv;
+			//printf("%d\n", rv);
+			//break;
+		}
 	}
 
 	return 0;
 }
 
+/*    
 int main()
 {
 	sqlite3 *db=NULL;
@@ -97,7 +120,8 @@ int main()
 	len = sqlite3_open(dbname, &db);
 	printf("haha\n");
 
-	sql_op(db, "table3", CREATE, "id int, name char");
+	sql_op(db, "table8", CREATE, "id int, name char");
+	sql_op(db, "table8", FIND, NULL);
 	
 	//snprintf(str1, LEN-1, "CREATE TABLE table2(%s);", data);
 	//sqlite3_exec(db, str1, NULL, NULL, &errmsg);
@@ -116,3 +140,5 @@ int main()
 	sqlite3_close(db);
 	return 0;
 }
+*/
+

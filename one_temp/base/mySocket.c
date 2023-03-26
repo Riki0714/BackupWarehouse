@@ -106,7 +106,7 @@ int client_init(sock_infor *cli_infor_t)
 		goto Exit1;
 	}
 
-	printf("%d\n", cli_infor_t->fd);
+//	printf("%d\n", cli_infor_t->fd);
 	printf("The client has been successfully initialized!\n");
 
 Exit1:

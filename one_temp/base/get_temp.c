@@ -132,6 +132,7 @@ int get_temp_str(char *buf, int len)
 	char	time[LEN_3] = {0};
 	double	tempF = 0;
 	char	str[LEN_4] = {0};
+	int		timeLen = 0;
 
 	//memset(name, 0, sizeof(name));
 	if( get_name(name, 64)<0 )  
@@ -150,10 +151,13 @@ int get_temp_str(char *buf, int len)
 	tempF = atof(content) / 1000;
 
 	get_time_pipe(time, 128);
+	timeLen = strlen(time);
+	time[timeLen-1] = '\0';
 	dbg_print("%s\n", time);
 
 	memset(buf, 0, len);
-	snprintf(str, len-1, "--Serial number: %s\n--Sampling time: %s--Temperature value: %.2f\n", name, time, tempF);
+	//snprintf(str, len-1, "--Serial number: %s\n--Sampling time: %s--Temperature value: %.2f\n", name, time, tempF);
+	snprintf(str, len-1, "--%s--%s--%.2f", name, time, tempF);
 	dbg_print("%s\n", str);
 
 	strncpy(buf, str, len-1);
