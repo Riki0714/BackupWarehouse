@@ -18,9 +18,15 @@ server:
 #	./ser.out -i0.0.0.0 -p 6666
 	./ser.out -p 6666
 
+linkList:
+	@gcc -shared -fPIC -o liblist.so myLinkList.c
+	@gcc ./myLinkList.c -o list.out -I ./ -llist -L ./
+	./list.out
+
 sql:
-#	gcc sql.c -I -lsqlite3 -L ${PATH}/lib -o sql
-#	./sql
+	@gcc -shared -fPIC -o libsql.so mySql.c
+	@gcc ./mySql.c -o sql.out -I ./ -I ../install/include -lsql -L ./ -lsqlite3 -L ../install/lib/
+	./sql.out
 
 uninstall:
 	@rm -f *.out *.so

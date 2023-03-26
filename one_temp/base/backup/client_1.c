@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
 	cli_infor_t.ip = (char *)&rv;
 	cli_infor_t.fd = -1;
 
-	//-------------- Command line argument parsing  --------------
 	struct option	opts[] = {
 		{"ipaddr", required_argument,  NULL, 'i'},
 		{"port",   required_argument,  NULL, 'p'},
@@ -98,7 +97,6 @@ int main(int argc, char *argv[])
 				return 0;
 		}
 	}
-	//----------------------------------------
   
 	if( !cli_infor_t.port || !cli_infor_t.ip )
 	{
@@ -109,50 +107,48 @@ int main(int argc, char *argv[])
 	printf("The entered ip and port are correct!\n");
 	dbg_print("%s %d %d\n", cli_infor_t.ip, cli_infor_t.port, time);
 
-	//------------ connect to server -------------
 	printf("Now the client tries the server...\n");
-	if( (rv = client_init(&cli_infor_t) < 0) )
-	{
-		printf("Failed to connect to the server\n");
-		link_flag = 0;
-	}
-	else  link_flag = 1;
-	
+
 	while(1)
 	{
-		//----------- Acquired temperature -------------
-		if ( !get_temp_str(serialNum, STR_LEN) )
-		{
-			printf("get temperature error!\n");
-			errorFlag++;
+			//Acquired temperature
+			if ( !get_temp_str(serialNum, STR_LEN) )
+			{
+				printf("get temperature error!\n");
+				errorFlag++;
 
-			if(errorFlag==5)
-			{
-				printf("Sorry, please check your hardware device and try again\n");
-				return -1; //If you can't get it, an error exit is reported
+				if(errorFlag==5)
+				{
+					printf("Sorry, please check your hardware device and try again\n");
+					return -1; //If you can't get it, an error exit is reported
+				}
+				else
+				{
+					printf("Unable to obtain temperature, trying again...\n");
+					sleep(5);
+					continue;
+				}
 			}
-			else
-			{
-				printf("Unable to obtain temperature, trying again...\n");
-				sleep(5);
-				continue;
-			}
-		}
-		errorFlag = 0;
-		dbg_print("%s\n", serialNum);
+			errorFlag = 0;
+			dbg_print("%s\n", serialNum);
 			
-		//------------ Send data to the server -------------
-		if( link_flag )
-		{
-			dbg_print("hei %d\n", link_flag);
-			if( write(cli_infor_t.fd, serialNum, strlen(serialNum)) < 0 )
+			//connect to server
+			rv = client_init(&cli_infor_t);
+			if(rv<0)
 			{
-				printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
-				close(cli_infor_t.fd);
+				printf("Failed to connect to the server\n");
 				link_flag = 0;
-				//put into database
-				//goto EXIT1;
 			}
+			else  link_flag = 1;
+
+			if(link_flag)
+			{
+				dbg_print("hei %d\n", link_flag);
+				if( write(cli_infor_t.fd, serialNum, strlen(serialNum)) < 0 )
+				{
+					printf("Write %d bytes data back to client[%d] failure: %s\n", rv, cli_infor_t.fd, strerror(errno));
+					close(cli_infor_t.fd);
+				}
 			/*  	 
 				if(rv=read(cli_infor_t.fd, buf, sizeof(buf)) < 0 )
 				{
@@ -160,35 +156,22 @@ int main(int argc, char *argv[])
 				}
 				else if( rv==0 )
 				{
-					link_flag = 0;
+					link_flag = -1;
 				}
 				printf("read %d bytes data from client[%d] and echo it back: '%s\n', rv, cli_infor_t.fd, buf");
 				*/
-		}
-		
-		if( !link_flag ) //Failed to connect to the server
-		{
-			//------------ Put into database ---------------
-			//
-
-			//------------ reconnection --------------------
-			if( (rv = client_init(&cli_infor_t) < 0) )
-			{
-				printf("Failed to connect to the server\n");
-				link_flag = 0;
 			}
-			else  link_flag = 1;
+			else
+			{
+				//fang ru shu ju ku
+			}
 
-			//Send everything in the database to the server
-		}
+			dbg_print("hei22 %d\n", link_flag);
+			//close(cli_infor_t.fd);
 
-		dbg_print("hei22 %d\n", link_flag);
-		//close(cli_infor_t.fd);
-		timer_s(time, 0);
+			timer_s(time, 0);
 		
 	}
-
-//EXIT1:
 
 	return 0;
 }

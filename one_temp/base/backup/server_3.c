@@ -30,8 +30,6 @@
 #define SER_IP		"0.0.0.0"
 #define BACKLOG		13
 #define MAX_EVENTS	512
-#define BASENAME    "serData"
-#define TABLENAME	"TEMP"
 
 int main(int argc, char *argv[])
 {
@@ -49,10 +47,6 @@ int main(int argc, char *argv[])
 	int						events;
 	struct epoll_event		event;
 	struct epoll_event		event_array[MAX_EVENTS];
-
-	char					dbName[32] = BASENAME;
-	char					tbName[32] = TABLENAME;
-	sqlite3				   *db = NULL;
 
 	int						ch = -1;
 	struct option 			opts[] = {
@@ -104,16 +98,6 @@ int main(int argc, char *argv[])
 		return -23;
 	}
 
-	//---------------- create dataBase
-	rv = -1;
-	rv = sqlite3_open(BASENAME, &db);
-	if( rv )
-	{
-		printf("open database %s failure: %s\n", dbName, sqlite3_errmsg(db));
-		sqlite3_close(db);
-		return -24;
-	}
-
 	//Backgrounder
 	if(daemon_flag)	daemon(0, 0);
 
@@ -125,7 +109,7 @@ int main(int argc, char *argv[])
 	if( (epollfd = epoll_create(MAX_EVENTS)) < 0 )
 	{
 		printf("create epoll failure: %s\n", strerror(errno));
-		return -25;
+		return -24;
 	}
 
 	//2. epoll_ctl() Modify the interest list of epoll
@@ -222,11 +206,10 @@ int main(int argc, char *argv[])
 Exit1:
 	if(rv<0)
 		close(serv_infor_t.fd);
-		sqlite3_close(db);
 	else
 		rv = 0;
 
-	return rv;
+	return 0;
 }
 
 
