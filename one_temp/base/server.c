@@ -22,43 +22,50 @@
 #include <getopt.h>
 #include <stdlib.h>
 
-#include "myDebug.h"
 #include "mySocket.h"
 #include "myDns.h"
 #include "mySql.h"
 
+//#define  CONFIG_DEBUG	
+#include "myDebug.h"
+
+
 #define BACKLOG		13
 #define MAX_EVENTS	512
+#define BUF_LEN		64
 #define BASENAME    "serData.db"
 #define TABLENAME	"TEMP"
 
 int main(int argc, char *argv[])
 {
-	sock_infor				serv_infor_t; //server information(ip, port...)
-	int						connfd = -1;
-	//struct sockaddr_in 	cli_addr;
-	//socklen_t				cliaddr_len;
-	int						rv = -20, i=0;
-	char					buf[64];
-	char					buf1[64]="hello, you are client!\n";
-	int 					daemon_flag = 0;
+	sock_infor				serv_infor_t;  //server information(ip, port...)
+	int						connfd = -1;   //fd -- Connect to a new client
+	int						rv = -20, i=0; //for test
+	char					bufRece[BUF_LEN] = {0}; //Stores data sent by the client
+	char					bufToDb[BUF_LEN] = {0}; //The data that the server wants to upload to the database
+	char					bufToCli[BUF_LEN]="hello, your data has been received!\n"; //Data returned by the server to the client
+	int 					daemon_flag = 0;   //1:Server background  0:Front-end print data
+	int						backlog = BACKLOG; //listen backlog
 	char					dfIp[32] = "0.0.0.0"; //Default Ip
+	int						dataIndex = 0;
 	
-	int						epollfd;
+	int						epollfd;  //Parameters about epoll
 	int						events;
 	struct epoll_event		event;
 	struct epoll_event		event_array[MAX_EVENTS];
 
-	char					dbName[32] = BASENAME;
+	char					dbName[32] = BASENAME; //Parameters about database
 	char					tbName[32] = TABLENAME;
 	sqlite3				   *db = NULL;
+	char				   *errmsg=NULL;
 
-	int						ch = -1;
+	int						ch = -1; //Parameters about command line argument parsing
 	struct option 			opts[] = {
-		{"--ipaddr", optional_argument, NULL, 'i'},
-		{"--daemon", optional_argument, NULL, 'd'},
-		{"--port",   required_argument, NULL, 'p'},
-		{"--help",   no_argument, 	    NULL, 'h'},
+		{"--port",    required_argument, NULL, 'p'},
+		{"--ipaddr",  optional_argument, NULL, 'i'},
+		{"--daemon",  optional_argument, NULL, 'd'},
+		{"--backlog", optional_argument, NULL, 'b'},
+		{"--help",    no_argument, 	     NULL, 'h'},
 		{0, 0, 0, 0}    ///!!!
 	}; ///!!!
 
@@ -79,6 +86,10 @@ int main(int argc, char *argv[])
 				daemon_flag = 1;
 				break;
 
+			case 'b':
+				backlog = atoi(optarg);
+				break;
+
 			case 'h':
 				printf("tbd...\n");
 				return 0;
@@ -91,7 +102,7 @@ int main(int argc, char *argv[])
 		return -2;
 	}
 
-	printf("22\n");
+	dbg_print("%d\n", serv_infor_t.port);
 	//set max open socket count
 	set_socket_rlimit();
 
@@ -114,9 +125,11 @@ int main(int argc, char *argv[])
 	}
 	if( sql_op(db, tbName, FIND, NULL) ) //If 1 is returned, the table does not exist
 	{
-		sql_op(db, tbName, CREATE, "id int, content text"); //create a new table
+		sql_op(db, tbName, CREATE, "id int, content char"); //create a new table
 	}
-	printf("Open database successfully!\n");
+	sqlite3_exec(db, "INSERT INTO TEMP VALUES(0, '------ new data ------')", NULL, NULL, &errmsg);
+
+	dbg_print("Open database successfully! %d\n", rv);
 
 
 	//---------------- epoll -----------------
@@ -129,6 +142,7 @@ int main(int argc, char *argv[])
 		printf("create epoll failure: %s\n", strerror(errno));
 		return -25;
 	}
+	dbg_print("create epoll successfully! %d\n", rv);
 
 	//2. epoll_ctl() Modify the interest list of epoll
 	if( (rv = epoll_ctl(epollfd, EPOLL_CTL_ADD, serv_infor_t.fd, &event)) < 0 )
@@ -137,6 +151,8 @@ int main(int argc, char *argv[])
 		return -25;
 	}
 	
+	printf("Start waiting and acccept new client connect...\n");
+
 	//---------------- daemon ----------------
 	if(daemon_flag) 
 	{
@@ -145,7 +161,7 @@ int main(int argc, char *argv[])
 
 	while(1)
 	{
-		printf("Start waiting and acccept new client connect...\n");
+		printf("waiting...\n");
 
 		//3. epoll_wait() Event wait
 		//Return the number of elements in the event arra array
@@ -193,8 +209,8 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				memset(buf, 0, sizeof(buf));
-				if( (rv=read(event_array[i].data.fd, buf, sizeof(buf))) < 0)
+				memset(bufRece, 0, sizeof(bufRece));
+				if( (rv=read(event_array[i].data.fd, bufRece, sizeof(bufRece))) < 0)
 				{
 					printf("Read data from client socket[%d] failure: %s\n", event_array[i].data.fd, strerror(errno));
 					close(event_array[i].data.fd);
@@ -208,13 +224,19 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, event_array[i].data.fd, buf);
+					char *errmsg=NULL;
+					printf("read %d bytes data from client[%d] and echo it back: '%s'\n", rv, event_array[i].data.fd, bufRece);
 		
 					//Put the data into the database
-					sql_op(db, tbName, INSERT, buf);
+					if(dataIndex<10000) dataIndex++;
+					else	dataIndex=1;
+
+					snprintf(bufToDb, sizeof(bufToDb),"%d, '%s'", dataIndex, bufRece);
+					sql_op(db, tbName, INSERT, bufToDb);
+					printf("Successfully put the data into the database [%s - %s]\n", dbName, tbName);
 				}
 
-				if( write(event_array[i].data.fd, buf1, rv) < 0 )
+				if( write(event_array[i].data.fd, bufToCli, rv) < 0 )
 				{
 					printf("Write %d bytes data back to client[%d] failure: %s\n", rv, event_array[i].data.fd, strerror(errno));
 					close(event_array[i].data.fd);
@@ -233,8 +255,6 @@ Exit1:
 	if(rv<0)
 		close(serv_infor_t.fd);
 		sqlite3_close(db);
-	else
-		rv = 0;
 
 	return rv;
 }

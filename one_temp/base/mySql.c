@@ -115,13 +115,19 @@ int main()
 	char	tbname[32]="table";
 	char	str1[LEN] = {0};
 	char	*errmsg=NULL;
+	char    buf[32]="--haha--";
+	char    buf1[32]={0};
 	char	data[LEN] = "id int, name char";
 
 	len = sqlite3_open(dbname, &db);
 	printf("haha\n");
 
 	sql_op(db, "table8", CREATE, "id int, name char");
-	sql_op(db, "table8", FIND, NULL);
+	snprintf(buf1, sizeof(buf1), "1, '%s'", buf);
+	printf("%s", buf1);
+	sql_op(db, "table8", INSERT, buf1);
+	//sql_op(db, "table8", INSERT, "1, '--haha--'");
+	//sql_op(db, "table8", FIND, NULL);
 	
 	//snprintf(str1, LEN-1, "CREATE TABLE table2(%s);", data);
 	//sqlite3_exec(db, str1, NULL, NULL, &errmsg);
@@ -140,5 +146,5 @@ int main()
 	sqlite3_close(db);
 	return 0;
 }
-*/
 
+*/
