@@ -36,6 +36,14 @@
 #define BASENAME    "serData.db"
 #define TABLENAME	"TEMP"
 
+
+void usage_print(char *proName)
+{
+	printf("Some parameters about this program[%s]:\n", proName);
+	printf("1.The parameters you must enter:\n");
+	printf("Port: '-p' '--port', such as: -p 6666 \n");
+}
+
 int main(int argc, char *argv[])
 {
 	sock_infor				serv_infor_t;  //server information(ip, port...)
@@ -91,7 +99,7 @@ int main(int argc, char *argv[])
 				break;
 
 			case 'h':
-				printf("tbd...\n");
+				usage_print(argv[0]);
 				return 0;
 		}
 	}
@@ -99,6 +107,7 @@ int main(int argc, char *argv[])
 	if( !serv_infor_t.port )
 	{
 		printf("Please enter the port number to listen for(-p xxx)\n");
+		usage_print(argv[0]);
 		return -2;
 	}
 
@@ -156,7 +165,12 @@ int main(int argc, char *argv[])
 	//---------------- daemon ----------------
 	if(daemon_flag) 
 	{
-		daemon(1,1);
+		if( daemon(0,0) < 0 )
+		{
+			printf("daemon failure: %s\n", strerror(errno));
+			return -26;
+		}
+		
 	}
 
 	while(1)

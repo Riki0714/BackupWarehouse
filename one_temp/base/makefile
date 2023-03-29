@@ -10,13 +10,13 @@ all:
 client:
 	@gcc -shared -fPIC -o libcli.so myDns.c client.c getTime.c get_temp.c mySocket.c myTimer.c
 	@gcc ./client.c -o cli.out -I ./ -lcli -L ./
-	./cli.out -i 127.0.0.1 -p 6666
+	./cli.out -i 127.0.0.1 -p 7777
 
 server:
 	@gcc -shared -fPIC -o libser.so myDns.c server.c getTime.c get_temp.c mySocket.c myTimer.c mySql.c
 	@gcc ./server.c -o ser.out -I ./ -I ../install/include -lser -L ./ -lsqlite3 -L ../install/lib/
 #	./ser.out -i0.0.0.0 -p 6666
-	./ser.out -p 6666
+	./ser.out -p 7777 -d1
 
 linkList:
 	@gcc -shared -fPIC -o liblist.so myLinkList.c
@@ -29,5 +29,5 @@ sql:
 	./sql.out
 
 uninstall:
-	@rm -f *.out *.so
+	@rm -f *.out *.so *.db
 
