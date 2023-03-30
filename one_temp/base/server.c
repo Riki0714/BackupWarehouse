@@ -62,18 +62,23 @@ int main(int argc, char *argv[])
 	struct epoll_event		event;
 	struct epoll_event		event_array[MAX_EVENTS];
 
-	char					dbName[32] = BASENAME; //Parameters about database
-	char					tbName[32] = TABLENAME;
+	char				   *dbName = BASENAME;
+	char				   *tbName = TABLENAME;
+//	char					dbName[32] = BASENAME; //Parameters about database
+//	char					tbName[32] = TABLENAME;
 	sqlite3				   *db = NULL;
 	char				   *errmsg=NULL;
 
 	int						ch = -1; //Parameters about command line argument parsing
-	struct option 			opts[] = {
-		{"--port",    required_argument, NULL, 'p'},
-		{"--ipaddr",  optional_argument, NULL, 'i'},
-		{"--daemon",  optional_argument, NULL, 'd'},
-		{"--backlog", optional_argument, NULL, 'b'},
-		{"--help",    no_argument, 	     NULL, 'h'},
+	struct option 	 		opts[] = 
+	{
+		{"--port",    		required_argument,	NULL, 'p'},
+		{"--ipaddr",  		optional_argument, 	NULL, 'i'},
+		{"--daemon",  		optional_argument, 	NULL, 'd'},
+		{"--backlog",	 	optional_argument, 	NULL, 'b'},
+		{"--databaseName",  optional_argument, 	NULL, 'a'},
+		{"--tableName", 	optional_argument, 	NULL, 't'},
+		{"--help",    		no_argument, 	    NULL, 'h'},
 		{0, 0, 0, 0}    ///!!!
 	}; ///!!!
 
@@ -82,7 +87,7 @@ int main(int argc, char *argv[])
 	serv_infor_t.ip = dfIp;
 	serv_infor_t.port = 6666;
 
-	while( (ch=getopt_long(argc, argv, "i::d::p:h", opts, NULL)) != -1 )
+	while( (ch=getopt_long(argc, argv, "p:i::d::b::a::t::h", opts, NULL)) != -1 )
 	{
 		switch( ch )
 		{
@@ -96,6 +101,14 @@ int main(int argc, char *argv[])
 
 			case 'b':
 				backlog = atoi(optarg);
+				break;
+
+			case 'a':
+				dbName = optarg;
+				break;
+
+			case 't':
+				tbName = optarg;
 				break;
 
 			case 'h':
@@ -125,7 +138,7 @@ int main(int argc, char *argv[])
 
 	//---------------- create dataBase
 	rv = -1;
-	rv = sqlite3_open(BASENAME, &db);
+	rv = sqlite3_open(dbName, &db);
 	if( rv )
 	{
 		printf("open database %s failure: %s\n", dbName, sqlite3_errmsg(db));
@@ -136,6 +149,7 @@ int main(int argc, char *argv[])
 	{
 		sql_op(db, tbName, CREATE, "id int, content char"); //create a new table
 	}
+	sql_op(db, tbName, CREATE, "id int, content char"); //create a new table
 	sqlite3_exec(db, "INSERT INTO TEMP VALUES(0, '------ new data ------')", NULL, NULL, &errmsg);
 
 	dbg_print("Open database successfully! %d\n", rv);

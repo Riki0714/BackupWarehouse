@@ -24,12 +24,17 @@
 #include "mySocket.h"
 #include "myDns.h"
 #include "myTimer.h"
+#include "mySql.h"
+#include "sqlite3.h"
 
 #define STR_LEN		256
+#define NAME_LEN	64
 #define TIME 		5
 
-#define INPUT_PARA_ERROR  -2
-#define GET_TEMP_ERROR 	  -3
+#define INPUT_PARA_ERROR  	-2
+#define GET_TEMP_ERROR 	  	-3
+#define BASENAME			"cliData.db"
+#define TABELNAME			"TEMP"
 
 //#define CONFIG_DEBUG
 #include "myDebug.h"
@@ -52,6 +57,15 @@ int main(int argc, char *argv[])
 	int		link_flag = 0;
 	char    buf[STR_LEN]={0};
 	char    ReceBuf[STR_LEN]={0};
+	char	bufToDb[NAME_LEN]={0};
+
+	sqlite3		 *db=NULL;
+	char		 *errmsg = NULL;
+	int			  dataIndex = 0;
+	//char		  dbName[NAME_LEN] = BASENAME;
+	char		 *dbName = BASENAME;
+	//char		  tbName[NAME_LEN] = TABELNAME;
+	char		 *tbName = TABELNAME;
 
 	memset(&cli_infor_t, 0, sizeof(cli_infor_t));
 	cli_infor_t.ip = (char *)&rv;
@@ -59,14 +73,16 @@ int main(int argc, char *argv[])
 
 	//-------------- Command line argument parsing  --------------
 	struct option	opts[] = {
-		{"ipaddr", required_argument,  NULL, 'i'},
-		{"port",   required_argument,  NULL, 'p'},
-		{"time",   optional_argument, NULL, 't'},
-		{"help",   no_argument,        NULL, 'h'},
+		{"ipaddr", 	 required_argument,  NULL, 'i'},
+		{"port",   	 required_argument,  NULL, 'p'},
+		{"time",  	 optional_argument,  NULL, 't'},
+		{"dbName",   optional_argument,  NULL, 'a'},
+		{"tbName",   optional_argument,  NULL, 'b'},
+		{"help",  	 no_argument,        NULL, 'h'},
 		{0, 0, 0, 0}
 	};
 
-	while( (ch=getopt_long(argc, argv, "i:p:t::h", opts, NULL)) != -1 )
+	while( (ch=getopt_long(argc, argv, "i:p:t::a::b::h", opts, NULL)) != -1 )
 	{
 		switch(ch)
 		{
@@ -90,6 +106,14 @@ int main(int argc, char *argv[])
 				cli_infor_t.port = atoi(optarg);
 				break;
 
+			case 'a':
+				dbName = optarg;
+				break;
+
+			case 'b':
+				tbName = optarg;
+				break;
+
 			case 't':
 				time = atoi(optarg);
 				break;
@@ -109,6 +133,23 @@ int main(int argc, char *argv[])
 	}
 	printf("The entered ip and port are correct!\n");
 	dbg_print("%s %d %d\n", cli_infor_t.ip, cli_infor_t.port, time);
+
+	//---------------------
+	rv = -1;
+	rv = sqlite3_open(dbName, &db);
+	if(rv)
+	{
+		printf("open database %s failure: %s\n", dbName, sqlite3_errmsg(db));
+		sqlite3_close(db);
+		return -12;
+	}
+	if( sql_op(db, tbName, FIND, NULL) )
+	{
+		sql_op(db, tbName, CREATE, "id int, content char");
+	}
+		//sql_op(db, "table1", CREATE, "id int, content char");
+	//sqlite3_exec(db, "INSERT INTO TEMP VALUES(0, '------ new data ------')", NULL, NULL, &errmsg);
+	dbg_print("Open database successfully! %d\n", rv);
 
 	//------------ connect to server -------------
 	printf("Now the client tries the server...\n");
@@ -141,6 +182,7 @@ int main(int argc, char *argv[])
 		}
 		errorFlag = 0;
 		dbg_print("%s\n", serialNum);
+		printf("%s\n", serialNum);
 			
 		//------------ Send data to the server -------------
 		if( link_flag )
@@ -176,7 +218,16 @@ int main(int argc, char *argv[])
 		if( !link_flag ) //Failed to connect to the server
 		{
 			//------------ Put into database ---------------
-			//
+			if(dataIndex<10000) dataIndex++;
+			else dataIndex=1;
+			
+			dbg_print("%s\n", serialNum);
+			//memset(bufToDb, 0, sizeof(bufToDb));
+			snprintf(bufToDb, sizeof(bufToDb), "%d, '%s'", dataIndex, serialNum);
+			dbg_print("%s\n", bufToDb);
+
+			sql_op(db, tbName, INSERT, bufToDb);
+			printf("Successfully put data into the database [%s - %s]\n", dbName, tbName);
 
 			//------------ reconnection --------------------
 			if( (rv = client_init(&cli_infor_t) < 0) )
@@ -184,7 +235,11 @@ int main(int argc, char *argv[])
 				printf("Failed to connect to the server\n");
 				link_flag = 0;
 			}
-			else  link_flag = 1;
+			else
+			{
+				link_flag = 1;
+				dataIndex = 0;
+			}
 
 			//Send everything in the database to the server
 		}
@@ -196,6 +251,7 @@ int main(int argc, char *argv[])
 	}
 
 //EXIT1:
+	sqlite3_close(db);
 
 	return 0;
 }
